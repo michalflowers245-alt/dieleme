@@ -282,8 +282,7 @@ export default function Home() {
           className="space-y-2"
         >
           <h1 className="text-3xl font-bold text-white tracking-tight">
-            The Last Journey<br/>
-            <span className="text-indigo-400">With Warmth & Care</span>
+            The Last Journey, <span className="text-indigo-400">With Warmth & Care</span>
           </h1>
           <p className="text-slate-500 text-sm">Professional Funeral Platform · Transparent Pricing · Global Service</p>
         </motion.div>
