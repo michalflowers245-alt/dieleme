@@ -49,8 +49,8 @@ let aMapInstance: any = null;
 
 // Replace with your actual AMap API Key and Security Code
 // See: https://console.amap.com/
-const AMAP_KEY = 'YOUR_AMAP_KEY_HERE'; 
-const AMAP_SECURITY_CODE = 'YOUR_AMAP_SECURITY_CODE_HERE';
+const AMAP_KEY = process.env.NEXT_PUBLIC_AMAP_KEY || 'YOUR_AMAP_KEY_HERE'; 
+const AMAP_SECURITY_CODE = process.env.NEXT_PUBLIC_AMAP_SECURITY_CODE || 'YOUR_AMAP_SECURITY_CODE_HERE';
 
 export const loadAMap = async () => {
   if (typeof window === 'undefined') return null;
