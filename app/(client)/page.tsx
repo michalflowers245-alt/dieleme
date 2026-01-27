@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Phone, MapPin, Truck, FileText, UserCheck, ChevronRight, Star, ShieldCheck, Clock, HeartHandshake, Search, AlertCircle, Zap, Calculator, X } from "lucide-react";
+import { Phone, MapPin, Truck, FileText, UserCheck, ChevronRight, Star, ShieldCheck, Clock, HeartHandshake, Search, AlertCircle, Zap, Calculator, X, Moon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ContactModal from "@/components/ContactModal";
 import { searchGlobalNearby, searchGlobalByKeyword, type POI, GLOBAL_MOCK_POIS } from "@/lib/global-map";
@@ -262,11 +262,9 @@ export default function Home() {
       </AnimatePresence>
 
       {/* Header */}
-      <header className="p-4 flex justify-between items-center border-b border-slate-800/50 backdrop-blur-sm sticky top-0 z-40 bg-slate-900/90">
+      <header className="fixed top-0 w-full p-4 flex justify-between items-center border-b border-slate-800/50 backdrop-blur-sm z-50 bg-slate-900/90">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
-            D
-          </div>
+          <Moon className="w-6 h-6 text-indigo-400" />
           <span className="text-white font-semibold text-lg tracking-tight">Dieleme</span>
         </div>
         <button className="text-sm font-medium text-slate-400 hover:text-white transition-colors">
@@ -275,7 +273,7 @@ export default function Home() {
       </header>
 
       {/* Hero & Hotline */}
-      <section className="pt-8 pb-6 px-6 text-center space-y-6 relative overflow-hidden">
+      <section className="pt-24 pb-6 px-6 text-center space-y-6 relative overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-indigo-500/5 blur-[100px] -z-10 pointer-events-none" />
         
         <motion.div 
