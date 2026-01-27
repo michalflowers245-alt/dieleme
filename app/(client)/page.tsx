@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Phone, MapPin, Truck, FileText, UserCheck, ChevronRight, Star, ShieldCheck, Clock, HeartHandshake, Search, AlertCircle, Zap, Calculator, X, Moon } from "lucide-react";
+import { Phone, MapPin, Truck, FileText, UserCheck, ChevronRight, Star, ShieldCheck, Clock, HeartHandshake, Search, AlertCircle, Zap, Calculator, X, Skull } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ContactModal from "@/components/ContactModal";
 import { searchGlobalNearby, searchGlobalByKeyword, type POI, GLOBAL_MOCK_POIS } from "@/lib/global-map";
@@ -264,7 +264,7 @@ export default function Home() {
       {/* Header */}
       <header className="fixed top-0 w-full p-4 flex justify-between items-center border-b border-slate-800/50 backdrop-blur-sm z-50 bg-slate-900/90">
         <div className="flex items-center gap-2">
-          <Moon className="w-6 h-6 text-indigo-400" />
+          <Skull className="w-6 h-6 text-indigo-400" />
           <span className="text-white font-semibold text-lg tracking-tight">Dieleme</span>
         </div>
         <button className="text-sm font-medium text-slate-400 hover:text-white transition-colors">
