@@ -113,12 +113,12 @@ export default function ContactModal({ isOpen, onClose, title = "立即联系管
                    <Phone size={32} />
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-xl font-bold text-white">别担心，我们已在待命</h3>
+                  <h3 className="text-xl font-bold text-white">We are here for you</h3>
                   <p className="text-slate-400 text-sm leading-relaxed px-4">
-                    请留下电话，专业管家将在 <span className="text-indigo-400 font-bold">60秒内</span> 回电为您分担。<br/>
+                    Leave your number, our concierge will call you within <span className="text-indigo-400 font-bold">60s</span>.<br/>
                     {initialData?.price && (
                        <span className="text-xs text-slate-500 mt-2 block">
-                         已选方案预算：¥{initialData.price}
+                         Estimated Budget: ${initialData.price}
                        </span>
                     )}
                   </p>
@@ -127,7 +127,7 @@ export default function ContactModal({ isOpen, onClose, title = "立即联系管
                   onClick={handleNextStep}
                   className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3.5 rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-indigo-500/20"
                 >
-                  联系管家
+                  Contact Now
                 </button>
               </motion.div>
             )}
@@ -139,26 +139,26 @@ export default function ContactModal({ isOpen, onClose, title = "立即联系管
                 className="flex flex-col gap-6"
               >
                 <div className="text-center space-y-1">
-                  <h3 className="text-xl font-semibold text-white">立即呼叫管家</h3>
-                  <p className="text-sm text-slate-400">我们将第一时间与您联系</p>
+                  <h3 className="text-xl font-semibold text-white">Call Concierge</h3>
+                  <p className="text-sm text-slate-400">We will contact you immediately</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-xs font-medium text-slate-400 ml-1">手机号码 <span className="text-red-500">*</span></label>
+                    <label className="text-xs font-medium text-slate-400 ml-1">Phone Number <span className="text-red-500">*</span></label>
                     <input
                       type="tel"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      placeholder="请输入11位手机号码"
+                      placeholder="Enter phone number"
                       className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-                      maxLength={11}
+                      
                       autoFocus
                     />
                   </div>
 
                   <div className="space-y-2">
-                     <label className="text-xs font-medium text-slate-400 ml-1">所在位置 (已自动填充)</label>
+                     <label className="text-xs font-medium text-slate-400 ml-1">Location (Auto-detected)</label>
                      <div className="w-full bg-slate-900/30 border border-slate-700/50 rounded-xl px-4 py-3 text-slate-300 flex items-center gap-2">
                         <MapPin size={16} className="text-indigo-500" />
                         <span className="text-sm">{location}</span>
@@ -167,17 +167,17 @@ export default function ContactModal({ isOpen, onClose, title = "立即联系管
 
                   {initialData?.services && initialData.services.length > 0 && (
                      <div className="bg-slate-700/20 rounded-lg p-3 text-xs text-slate-400">
-                        <span className="font-medium text-slate-300">已选服务：</span>
-                        {initialData.services.join("、")}
+                        <span className="font-medium text-slate-300">Selected Services: </span>
+                        {initialData.services.join(", ")}
                      </div>
                   )}
 
                   <button
                     type="submit"
-                    disabled={phone.length < 11}
+                    disabled={phone.length < 5}
                     className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-3 rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-indigo-500/20"
                   >
-                    立即呼叫
+                    Call Now
                   </button>
                 </form>
               </motion.div>
@@ -219,16 +219,16 @@ export default function ContactModal({ isOpen, onClose, title = "立即联系管
                 <div className="space-y-2">
                   <h3 className="text-xl font-bold text-white flex items-center justify-center gap-2">
                      <Clock className="text-indigo-400" />
-                     管家正在接入中
+                     Connecting...
                   </h3>
-                  <p className="text-slate-400 text-sm">请保持手机畅通，我们将在60秒内联系您</p>
+                  <p className="text-slate-400 text-sm">Please keep your phone on.</p>
                 </div>
 
                 <button 
                   onClick={onClose}
                   className="text-slate-500 text-sm hover:text-white transition-colors mt-4"
                 >
-                  关闭窗口
+                  Close
                 </button>
               </motion.div>
             )}

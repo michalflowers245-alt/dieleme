@@ -1,11 +1,83 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Phone, MapPin, Truck, FileText, UserCheck, ChevronRight, Star, ShieldCheck, Clock, HeartHandshake, Search, AlertCircle, Zap, Calculator } from "lucide-react";
-import MapPlaceholder from "@/components/MapPlaceholder";
-import { motion } from "framer-motion";
+import { Phone, MapPin, Truck, FileText, UserCheck, ChevronRight, Star, ShieldCheck, Clock, HeartHandshake, Search, AlertCircle, Zap, Calculator, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import ContactModal from "@/components/ContactModal";
-import { searchNearby, searchByKeyword, type POI, MOCK_POIS } from "@/lib/amap";
+import { searchGlobalNearby, searchGlobalByKeyword, type POI, GLOBAL_MOCK_POIS } from "@/lib/global-map";
+
+// Detailed Content Data
+const DETAILED_SERVICES: Record<string, { title: string; items: { name: string; price: number; img: string; desc: string }[] }> = {
+  shrouds: {
+    title: "Shrouds & Ceremonial Clothing",
+    items: [
+      { 
+        name: "Classic Silk Shroud", 
+        price: 299, 
+        img: "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?w=800&auto=format&fit=crop&q=60", 
+        desc: "Hand-woven silk, dignified and traditional." 
+      },
+      { 
+        name: "Modern Suit Set", 
+        price: 499, 
+        img: "https://images.unsplash.com/photo-1594938298603-c8148c472997?w=800&auto=format&fit=crop&q=60", 
+        desc: "Complete formal suit with accessories." 
+      },
+      { 
+        name: "Premium Embroidered Robe", 
+        price: 899, 
+        img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=60", 
+        desc: "Exquisite craftsmanship with gold thread embroidery." 
+      },
+    ]
+  },
+  vehicles: {
+    title: "Hearse & Transportation",
+    items: [
+      { 
+        name: "Standard Service Van", 
+        price: 300, 
+        img: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800&auto=format&fit=crop&q=60", 
+        desc: "Reliable transport for initial transfer." 
+      },
+      { 
+        name: "Cadillac Hearse", 
+        price: 800, 
+        img: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&auto=format&fit=crop&q=60", 
+        desc: "Classic black Cadillac hearse for the procession." 
+      },
+      { 
+        name: "Mercedes-Benz Ceremonial", 
+        price: 1200, 
+        img: "https://images.unsplash.com/photo-1617788138017-80ad40651399?w=800&auto=format&fit=crop&q=60", 
+        desc: "Luxury European style for the highest honor." 
+      },
+    ]
+  },
+  niches: {
+    title: "Memorial Niches & Urns",
+    items: [
+      { 
+        name: "Carved Wooden Urn", 
+        price: 150, 
+        img: "https://images.unsplash.com/photo-1633934542430-0905ccb5f050?w=800&auto=format&fit=crop&q=60", 
+        desc: "Solid wood with hand-carved details." 
+      },
+      { 
+        name: "White Marble Urn", 
+        price: 450, 
+        img: "https://images.unsplash.com/photo-1618220179428-22790b461013?w=800&auto=format&fit=crop&q=60", 
+        desc: "Pure natural marble, eternal and elegant." 
+      },
+      { 
+        name: "Jade Memorial Box", 
+        price: 2000, 
+        img: "https://images.unsplash.com/photo-1605218427368-35b019b8e390?w=800&auto=format&fit=crop&q=60", 
+        desc: "Premium jade, symbolizing peace and eternity." 
+      },
+    ]
+  }
+};
 
 export default function Home() {
   const [isModalOpen, setModalOpen] = useState(false);
@@ -14,15 +86,18 @@ export default function Home() {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [manualSearchQuery, setManualSearchQuery] = useState("");
   const [modalInitialData, setModalInitialData] = useState<{ services?: string[], price?: number }>({});
+  
+  // Detail Modal State
+  const [activeDetailCategory, setActiveDetailCategory] = useState<string | null>(null);
 
   // Cost Estimator State
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   
   const estimateOptions = [
-    { id: "car", label: "灵车接送", price: 800 },
-    { id: "shroud", label: "寿衣准备", price: 1200 },
-    { id: "ceremony", label: "告别仪式", price: 2000 },
-    { id: "urn", label: "精美骨灰盒", price: 1500 },
+    { id: "car", label: "Hearse Service", price: 800 },
+    { id: "shroud", label: "Shrouds & Clothing", price: 500 },
+    { id: "ceremony", label: "Ceremony Hall", price: 2000 },
+    { id: "urn", label: "Premium Urn", price: 450 },
   ];
 
   const toggleService = (id: string) => {
@@ -54,9 +129,9 @@ export default function Home() {
   useEffect(() => {
     // Helper to load fallback data
     const loadFallbackData = () => {
-      console.log("Loading fallback mock data");
-      setNearbyPois(MOCK_POIS);
-      setLocationError("无法获取定位，已为您展示上海市演示数据");
+      console.log("Loading fallback global mock data");
+      setNearbyPois(GLOBAL_MOCK_POIS);
+      setLocationError("Unable to locate. Showing global demo data.");
       setIsLoading(false);
     };
 
@@ -65,17 +140,9 @@ export default function Home() {
         async (position) => {
           try {
             const { latitude, longitude } = position.coords;
-            const pois = await searchNearby(latitude, longitude);
-            // If search returns empty but we have mock data logic inside searchNearby, 
-            // it usually returns mock data if AMap fails. 
-            // But if it returns empty array for other reasons, we might want to fallback too?
-            // For now trust searchNearby's internal fallback for API failures.
-            if (pois.length === 0) {
-               loadFallbackData();
-            } else {
-               setNearbyPois(pois);
-               setIsLoading(false);
-            }
+            const pois = await searchGlobalNearby(latitude, longitude);
+            setNearbyPois(pois);
+            setIsLoading(false);
           } catch (error) {
             console.error("Search failed:", error);
             loadFallbackData();
@@ -95,10 +162,9 @@ export default function Home() {
     if (!manualSearchQuery.trim()) return;
     setIsLoading(true);
     try {
-      // Search nationwide or default city
-      const pois = await searchByKeyword(manualSearchQuery + "殡仪馆");
+      const pois = await searchGlobalByKeyword(manualSearchQuery);
       setNearbyPois(pois);
-      setLocationError(null); // Clear error if search succeeds
+      setLocationError(null); 
     } catch (error) {
       console.error("Manual search failed:", error);
     } finally {
@@ -108,30 +174,92 @@ export default function Home() {
 
   const prices = [
     { 
-      title: "基础告别套餐", 
-      price: "1999", 
-      desc: "简约庄重，包含基础接运与告别",
-      features: ["遗体接运", "基础冷藏", "告别厅布置", "骨灰盒"]
+      title: "Essential Care", 
+      price: "1,999", 
+      desc: "Simple and dignified. Includes basic transport and farewell.",
+      features: ["Body Transport", "Basic Cooling", "Farewell Hall", "Standard Urn"]
     },
     { 
-      title: "标准体面套餐", 
-      price: "4999", 
-      desc: "全程无忧，尊享专业管家服务",
-      features: ["豪华灵车", "3天冷藏", "鲜花布置", "高档寿衣", "全程引导"],
+      title: "Premium Dignity", 
+      price: "4,999", 
+      desc: "Full service with professional concierge guidance.",
+      features: ["Luxury Hearse", "3-Day Cooling", "Floral Arrangement", "Premium Shroud", "Full Guidance"],
       recommend: true
     },
   ];
 
   const steps = [
-    { icon: Phone, title: "提交需求", desc: "24小时响应" },
-    { icon: UserCheck, title: "管家上门", desc: "30分钟必达" },
-    { icon: FileText, title: "方案确认", desc: "透明无隐形" },
-    { icon: HeartHandshake, title: "全程代办", desc: "省心更放心" },
+    { icon: Phone, title: "Request", desc: "24h Response" },
+    { icon: UserCheck, title: "Concierge", desc: "Arrive in 30m" },
+    { icon: FileText, title: "Confirm", desc: "Transparent" },
+    { icon: HeartHandshake, title: "Service", desc: "Peace of Mind" },
   ];
 
   return (
-    <main className="flex flex-col min-h-screen bg-slate-900 text-zinc-400 pb-24">
+    <main className="flex flex-col min-h-screen bg-slate-900 text-zinc-400 pb-24 font-sans">
       <ContactModal isOpen={isModalOpen} onClose={() => setModalOpen(false)} initialData={modalInitialData} />
+
+      {/* Detail Modal */}
+      <AnimatePresence>
+        {activeDetailCategory && DETAILED_SERVICES[activeDetailCategory] && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setActiveDetailCategory(null)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="relative bg-slate-800 rounded-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto shadow-2xl border border-slate-700"
+            >
+              <div className="sticky top-0 bg-slate-800/95 backdrop-blur z-10 p-4 border-b border-slate-700 flex justify-between items-center">
+                <h3 className="text-xl font-bold text-white">{DETAILED_SERVICES[activeDetailCategory].title}</h3>
+                <button 
+                  onClick={() => setActiveDetailCategory(null)}
+                  className="p-2 hover:bg-slate-700 rounded-full text-slate-400 hover:text-white transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="p-4 space-y-4">
+                {DETAILED_SERVICES[activeDetailCategory].items.map((item, idx) => (
+                  <div key={idx} className="bg-slate-700/30 rounded-xl overflow-hidden border border-slate-700/50">
+                    <div className="h-40 w-full bg-slate-800 relative">
+                       {/* Placeholder Image using generic Unsplash if possible or just color block with text */}
+                       <img 
+                          src={item.img} 
+                          alt={item.name}
+                          className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity"
+                       />
+                    </div>
+                    <div className="p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="text-white font-semibold text-lg">{item.name}</h4>
+                        <span className="text-indigo-400 font-bold font-mono">${item.price}</span>
+                      </div>
+                      <p className="text-sm text-slate-400 mb-4">{item.desc}</p>
+                      <button 
+                        onClick={() => {
+                          setActiveDetailCategory(null);
+                          openDefaultModal();
+                        }}
+                        className="w-full bg-indigo-600/20 hover:bg-indigo-600 text-indigo-400 hover:text-white py-2 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        Inquire Now
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Header */}
       <header className="p-4 flex justify-between items-center border-b border-slate-800/50 backdrop-blur-sm sticky top-0 z-40 bg-slate-900/90">
@@ -142,7 +270,7 @@ export default function Home() {
           <span className="text-white font-semibold text-lg tracking-tight">Dieleme</span>
         </div>
         <button className="text-sm font-medium text-slate-400 hover:text-white transition-colors">
-          我的订单
+          My Orders
         </button>
       </header>
 
@@ -156,10 +284,10 @@ export default function Home() {
           className="space-y-2"
         >
           <h1 className="text-3xl font-bold text-white tracking-tight">
-            生命的最后一程<br/>
-            <span className="text-indigo-400">我们将温暖相伴</span>
+            The Last Journey<br/>
+            <span className="text-indigo-400">With Warmth & Care</span>
           </h1>
-          <p className="text-slate-500 text-sm">专业殡葬服务平台 · 价格透明 · 24小时服务</p>
+          <p className="text-slate-500 text-sm">Professional Funeral Platform · Transparent Pricing · Global Service</p>
         </motion.div>
 
         {/* Hotline Card */}
@@ -180,30 +308,31 @@ export default function Home() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
               </span>
-              24小时全城上门服务热线
+              24/7 Global Concierge Hotline
             </div>
-            <div className="text-3xl font-bold tracking-wider mt-2 font-mono">400-820-8820</div>
+            <div className="text-3xl font-bold tracking-wider mt-2 font-mono">1-800-DIELEME</div>
             <div className="mt-4 w-full bg-white text-indigo-600 font-semibold py-3 rounded-xl shadow-lg active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
               <Phone size={18} />
-              立即呼叫管家
+              Call Concierge
             </div>
           </div>
         </motion.div>
       </section>
 
-      {/* Quick Actions */}
+      {/* Quick Actions / Catalog */}
       <section className="px-6 py-4">
         <div className="grid grid-cols-3 gap-3">
           {[
-            { icon: FileText, label: "寿衣准备", color: "text-amber-400", bg: "bg-amber-400/10" },
-            { icon: Truck, label: "车辆调度", color: "text-blue-400", bg: "bg-blue-400/10" },
-            { icon: UserCheck, label: "灵位设置", color: "text-emerald-400", bg: "bg-emerald-400/10" },
+            { icon: FileText, label: "Shrouds", key: "shrouds", color: "text-amber-400", bg: "bg-amber-400/10" },
+            { icon: Truck, label: "Vehicles", key: "vehicles", color: "text-blue-400", bg: "bg-blue-400/10" },
+            { icon: UserCheck, label: "Niches", key: "niches", color: "text-emerald-400", bg: "bg-emerald-400/10" },
           ].map((item, idx) => (
             <motion.div 
               key={idx} 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 + idx * 0.1 }}
+              onClick={() => setActiveDetailCategory(item.key)}
               className="bg-slate-800/50 p-4 rounded-xl flex flex-col items-center justify-center gap-3 hover:bg-slate-800 transition-colors cursor-pointer border border-slate-700/50 group"
             >
               <div className={`w-10 h-10 ${item.bg} ${item.color} rounded-full flex items-center justify-center group-hover:scale-110 transition-transform`}>
@@ -219,7 +348,7 @@ export default function Home() {
       <section className="px-6 py-6">
         <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
           <Clock size={18} className="text-indigo-500" />
-          服务流程
+          Service Process
         </h2>
         <div className="bg-slate-800/30 rounded-2xl p-6 border border-slate-800">
           <div className="relative">
@@ -243,28 +372,28 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Nearby Funeral Homes */}
+      {/* Nearby Funeral Homes (Google Maps Style) */}
       <section className="px-6 py-6">
         <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
           <MapPin size={18} className="text-indigo-500" />
-          附近殡仪馆
+          Nearby Funeral Homes (Global)
         </h2>
 
-        {/* Trust Bar */}
-        <div className="grid grid-cols-4 gap-2 mb-6">
-          {[
-            { icon: ShieldCheck, label: "政府认证" },
-            { icon: FileText, label: "价格透明" },
-            { icon: UserCheck, label: "全程陪同" },
-            { icon: Zap, label: "15分响应" },
-          ].map((item, idx) => (
-            <div key={idx} className="flex flex-col items-center gap-1.5">
-              <div className="w-8 h-8 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400">
-                <item.icon size={14} />
-              </div>
-              <span className="text-[10px] text-slate-400 font-medium whitespace-nowrap">{item.label}</span>
-            </div>
-          ))}
+        {/* Map Embed Placeholder */}
+        <div className="w-full h-48 bg-slate-800 rounded-xl mb-4 overflow-hidden relative group">
+           {/* Simulate a Google Map View */}
+           <div className="absolute inset-0 bg-slate-700 flex items-center justify-center">
+              <span className="text-slate-500 text-sm flex items-center gap-2">
+                 <MapPin size={16} /> Google Maps View
+              </span>
+           </div>
+           {/* Interactive overlay */}
+           <iframe 
+             className="absolute inset-0 w-full h-full opacity-60 grayscale hover:grayscale-0 transition-all duration-700"
+             src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d3022.0606825994123!2d-73.985428!3d40.748817!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sus!4v1620000000000!5m2!1sen!2sus"
+             loading="lazy"
+           />
+           <div className="absolute bottom-2 right-2 bg-white/90 text-black text-[10px] px-2 py-0.5 rounded shadow">Google</div>
         </div>
 
         {locationError && (
@@ -276,7 +405,7 @@ export default function Home() {
             <div className="flex gap-2">
               <input 
                 type="text" 
-                placeholder="请输入城市或区域（如：上海 殡仪馆）"
+                placeholder="Search City (e.g., New York)"
                 value={manualSearchQuery}
                 onChange={(e) => setManualSearchQuery(e.target.value)}
                 className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 placeholder:text-slate-600"
@@ -286,7 +415,7 @@ export default function Home() {
                 className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-500 transition-colors flex items-center gap-1 shrink-0"
               >
                 <Search size={16} />
-                搜索
+                Search
               </button>
             </div>
           </div>
@@ -294,7 +423,7 @@ export default function Home() {
 
         <div className="space-y-3">
           {isLoading ? (
-            <div className="text-center py-8 text-slate-500 text-sm animate-pulse">正在搜索附近服务机构...</div>
+            <div className="text-center py-8 text-slate-500 text-sm animate-pulse">Searching nearby services...</div>
           ) : nearbyPois.length > 0 ? (
             nearbyPois.map((home, idx) => (
               <motion.div
@@ -333,7 +462,7 @@ export default function Home() {
               </motion.div>
             ))
           ) : !locationError && (
-             <div className="text-center py-8 text-slate-500 text-sm">暂无附近数据，请尝试手动搜索</div>
+             <div className="text-center py-8 text-slate-500 text-sm">No results found. Try manual search.</div>
           )}
         </div>
       </section>
@@ -342,7 +471,7 @@ export default function Home() {
       <section className="px-6 py-6 bg-slate-800/20">
          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
             <Calculator size={18} className="text-indigo-500" />
-            服务费用预估
+            Cost Estimator
          </h2>
          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-lg">
             <div className="space-y-4">
@@ -366,16 +495,16 @@ export default function Home() {
                         </div>
                         <span className="text-slate-200 text-sm font-medium">{option.label}</span>
                      </div>
-                     <span className="text-indigo-400 font-mono">¥{option.price}</span>
+                     <span className="text-indigo-400 font-mono">${option.price}</span>
                   </div>
                ))}
             </div>
 
             <div className="mt-6 pt-4 border-t border-slate-700 flex items-center justify-between">
                <div className="flex flex-col">
-                  <span className="text-xs text-slate-500">预估总价</span>
+                  <span className="text-xs text-slate-500">Estimated Total</span>
                   <span className="text-2xl font-bold text-white font-mono">
-                     <span className="text-sm align-top mr-0.5">¥</span>
+                     <span className="text-sm align-top mr-0.5">$</span>
                      {estimatedTotal}
                   </span>
                </div>
@@ -383,7 +512,7 @@ export default function Home() {
                   onClick={handleEstimateBook}
                   className="bg-white text-indigo-600 px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg active:scale-95 transition-transform"
                >
-                  按此预算预约
+                  Book Plan
                </button>
             </div>
          </div>
@@ -393,7 +522,7 @@ export default function Home() {
       <section className="px-6 py-6">
         <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
           <ShieldCheck size={18} className="text-indigo-500" />
-          服务价格透明表
+          Transparent Pricing
         </h2>
         <div className="flex gap-4 overflow-x-auto pb-4 -mx-6 px-6 snap-x">
           {prices.map((item, idx) => (
@@ -407,12 +536,12 @@ export default function Home() {
             >
               {item.recommend && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-indigo-500 to-violet-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg">
-                  店长推荐
+                  Recommended
                 </div>
               )}
               <h3 className="text-white font-bold text-lg">{item.title}</h3>
               <div className="mt-2 flex items-baseline gap-1 text-indigo-400">
-                <span className="text-sm">¥</span>
+                <span className="text-sm">$</span>
                 <span className="text-2xl font-bold font-mono">{item.price}</span>
               </div>
               <p className="text-slate-500 text-xs mt-2">{item.desc}</p>
@@ -436,7 +565,7 @@ export default function Home() {
                     : "bg-slate-700 text-slate-200 hover:bg-slate-600"
                 }`}
               >
-                选择此套餐
+                Select Plan
               </button>
             </div>
           ))}
